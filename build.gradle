@@ -30,12 +30,14 @@ dependencies {
   compileOnly 'org.projectlombok:lombok'
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
   runtimeOnly 'com.oracle.database.jdbc:ojdbc8'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testImplementation 'org.springframework.security:spring-security-test'
   testImplementation group: 'org.dbunit', name: 'dbunit', version: '2.7.3'
   testImplementation group: 'com.github.springtestdbunit', name: 'spring-test-dbunit', version: '1.3.0'
   testImplementation "org.mockito:mockito-core:3.+"
   testImplementation 'org.mockito:mockito-inline:3.+'
+  
 }
 
 tasks.named('test') {
