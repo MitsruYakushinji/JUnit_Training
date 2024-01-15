@@ -76,7 +76,8 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー名が1文字の場合trueを返すこと() {
-
+    	Category category = new Category("あ");
+    	assertThat(target.isValid(category)).isTrue();
     }
     
     /**
@@ -86,7 +87,12 @@ class CategoryServiceTest {
      */
     @Test
     void カテゴリー名が32文字の場合trueを返すこと() {
-
+    	Category category = new Category(
+    			  "ああああああああああ"
+    			+ "ああああああああああ"
+    			+ "ああああああああああ"
+    			+ "ああ");
+    	assertThat(target.isValid(category)).isTrue();
     }
 
     /**
@@ -96,7 +102,8 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー名が0文字の場合falseを返すこと() {
-
+    	Category category = new Category("");
+    	assertThat(target.isValid(category)).isFalse();
     }
     
     /**
@@ -106,7 +113,12 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー名が33文字の場合falseを返すこと() {
-
+    	Category category = new Category(
+    			 "ああああああああああ"
+    			+"ああああああああああ"
+    			+"ああああああああああ"
+    			+"あああ");
+    	assertThat(target.isValid(category)).isFalse();
     }
     
     /**
@@ -116,7 +128,9 @@ class CategoryServiceTest {
     */    
     @Test
     void カテゴリー名が重複していない場合trueを返すこと() {
-
+    	Category newCategory = new Category("ABCDE");
+    	doReturn(null).when(this.mockCategoryRepository).findByName(anyString());
+    	assertThat(target.checkUnique(newCategory)).isTrue();
     }
     
     /**
@@ -126,7 +140,14 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー名が重複する場合falseを返すこと() {
-
+    	Category newCategory = new Category("カテゴリーA");
+    	
+    	Category mockCategry = new Category();
+    	mockCategry.setId(1L);
+    	mockCategry.setName("カテゴリーA");
+    	
+    	doReturn(mockCategry).when(this.mockCategoryRepository).findByName(newCategory.getName());
+    	assertThat(target.checkUnique(newCategory)).isFalse();
     }
 
     /**
@@ -136,7 +157,18 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー情報が存在する場合例外が発生しないこと() {
-
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<Category> category = Optional.of(new Category());
+    	
+    	doReturn(count).when(this.mockCategoryRepository).countById(id);
+    	doReturn(category).when(this.mockCategoryRepository).findById(id);
+    	
+    	assertThatCode(() -> {
+    		target.get(id);
+    	})
+    	.doesNotThrowAnyException();
     }
     
     /**
@@ -146,7 +178,14 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー情報が存在しない場合例外が発生すること() {
-
+    	Long id = 1000L;
+    	
+    	doReturn(null).when(this.mockCategoryRepository).countById(id);
+    	
+    	assertThatThrownBy(() -> {
+    		target.get(id);
+    	})
+    	.isInstanceOf(NotFoundException.class);
     }
     
     /**
@@ -156,6 +195,15 @@ class CategoryServiceTest {
     */
     @Test
     void カテゴリー情報の取得処理の検証() throws Exception {
-
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<Category> category = Optional.of(new Category());
+    	
+    	doReturn(count).when(this.mockCategoryRepository).countById(id);
+    	doReturn(category).when(this.mockCategoryRepository).findById(id);
+    	
+    	Category actual = this.target.get(id);
+    	assertThat(actual).isEqualTo(category.get());
     }
 }

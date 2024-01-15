@@ -89,6 +89,7 @@ class CategoryControllerTest {
     }
 
     /**
+     * カテゴリー詳細画面の検証
      */
     @Test
     void detailCategoryTest() throws Exception {

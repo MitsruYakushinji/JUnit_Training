@@ -47,7 +47,8 @@ class ProductControllerTest {
 
     @BeforeEach
     void setup() {
-
+    	// MockMvcの生成
+    	this.mockMvc = MockMvcBuilders.standaloneSetup(target).alwaysDo(log()).build();
     }
 
     /**
@@ -55,7 +56,15 @@ class ProductControllerTest {
      */
     @Test
     void listProductsTest() throws Exception {
-
+    	List<Product> products = new ArrayList<>();
+    	String keyword = null;
+    	
+    	doReturn(products).when(this.mockProductService).listAll(keyword);
+    	this.mockMvc.perform(get("/products").param("keyword", keyword))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("products/products"))
+    		.andExpect(model().attribute("listProducts", products))
+    		.andExpect(model().attribute("keyword", keyword));
     }
 
     /**
@@ -63,7 +72,12 @@ class ProductControllerTest {
      */
     @Test
     void newProductTest() throws Exception {
-
+    	MvcResult result = this.mockMvc.perform(get("/products/new"))
+    			.andExpect(status().isOk())
+    			.andExpect(view().name("products/product_form")).andReturn();
+    	
+    	Product actual = (Product)result.getModelAndView().getModel().get("product");
+    	assertThat(actual).isInstanceOf(Product.class);
     }
 
     /**
@@ -71,7 +85,17 @@ class ProductControllerTest {
      */
     @Test
     void saveProductTest() throws Exception {
-
+    	Product product = new Product();
+    	
+    	doReturn(true).when(this.mockProductService).isValid(product.getName(), product.getDescription());
+    	doReturn(true).when(this.mockProductService).checkUnique(product);
+    	doReturn(null).when(this.mockProductService).save(product);
+    	//doReturn().when(this.productSaveHelper).setMainImageName(MultipartFile, product);
+    	// 画像に関しては保留
+    	this.mockMvc.perform(post("/products/save").flashAttr("product", product))
+    		.andExpect(status().isFound())
+    		.andExpect(redirectedUrl("/products"))
+    		.andExpect(flash().attribute("success_message", "登録に成功しました"));
     }
 
     /**
@@ -79,7 +103,15 @@ class ProductControllerTest {
      */
     @Test
     void detailProductTest() throws Exception {
-
+    	Long id = 1L;
+    	Product product = new Product();
+    	
+    	doReturn(product).when(this.mockProductService).get(id);
+    	
+    	this.mockMvc.perform(get("/products/detail/{id}", id))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("products/product_detail"))
+    		.andExpect(model().attribute("product", product));
     }
 
     /**
@@ -87,7 +119,18 @@ class ProductControllerTest {
      */
     @Test
     void editProductTest() throws Exception {
-
+    	Long id = 1L;
+    	Product product = new Product();
+    	
+    	doReturn(product).when(this.mockProductService).get(id);
+    	//doReturn(product).when(this.mockBrandService).listAll();
+    	//doReturn(product).when(this.mockCategoryService).listAll();
+    	
+    	this.mockMvc.perform(get("/products/edit/{id}", id))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("products/product_edit"))
+    		.andExpect(model().attribute("product",product));
+    		//.andExpect(model().attribute("listBrands", listBrands))
     }
 
     /**
@@ -95,6 +138,44 @@ class ProductControllerTest {
      */
     @Test
     void deleteProductTest() throws Exception {
-
+    	Long id = 1L;
+    	
+    	doNothing().when(this.mockProductService).delete(id);
+    	
+    	this.mockMvc.perform(get("/products/delete/{id}", id))
+    			.andExpect(status().isFound())
+    			.andExpect(redirectedUrl("/products"))
+    			.andExpect(flash().attribute("success_message", "削除に成功しました"));
+    			
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

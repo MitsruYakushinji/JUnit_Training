@@ -42,7 +42,27 @@ class ProductServiceTest {
     */
     @BeforeAll
     static void setUp(){
-
+    	IDatabaseConnection connection = null;
+    	try {
+    		Class.forName("oracle.jdbc.driver.OracleDriver");
+    		Connection jdbcConnection = DriverManager.getConnection(
+    				"jdbc:oracle:thin:@localhost:1521:xe", "SLSHOP_UT", "slshop");
+    		connection = new DatabaseConnection(jdbcConnection, "SLSHOP_UT");
+    		IDataSet iDataset = new CsvDataSet(
+    				new File(System.getProperty("user.dir")
+    						+ "\\src\\test\\resources\\testData"));
+    		DatabaseOperation.CLEAN_INSERT.execute(connection, iDataset);
+    	} catch (Exception e) {
+    		System.err.println(e);
+    	} finally {
+    		if(connection != null) {
+    			try {
+    				connection.close();
+    			} catch (Exception e) {
+    				System.err.println(e);
+    			}
+    		}
+    	}
     }
     
     /**
@@ -56,7 +76,7 @@ class ProductServiceTest {
     @ParameterizedTest
     @CsvFileSource(resources = "paramtest_true.csv", numLinesToSkip = 1)
     void parameterTestTrue(String name, String description) {
-
+    	assertThat(target.isValid(name, description)).isTrue();
     }
 
     /**
@@ -72,7 +92,7 @@ class ProductServiceTest {
     @ParameterizedTest
     @CsvFileSource(resources = "paramtest_false.csv", numLinesToSkip = 1)
     void parameterTestFalse(String name, String description) {
-
+    	assertThat(target.isValid(name, description)).isFalse();
     }
 
     /**
@@ -82,7 +102,9 @@ class ProductServiceTest {
     */
     @Test
     void 商品名が重複していない場合trueを返すこと() {
-
+    	Product newProduct = new Product("商品Z");
+    	doReturn(null).when(this.mockProductRepository).findByName(anyString());
+    	assertThat(target.checkUnique(newProduct)).isTrue();
     }
     /**
     * 概要 商品名の重複チェック<br>
@@ -91,7 +113,14 @@ class ProductServiceTest {
     */
     @Test
     void 商品名が重複する場合falseを返すこと() {
-
+    	Product newProduct = new Product("商品A");
+    	
+    	Product mockProduct = new Product();
+    	mockProduct.setId(1L);
+    	mockProduct.setName("商品A");
+    	
+    	doReturn(mockProduct).when(this.mockProductRepository).findByName(newProduct.getName());
+    	assertThat(target.checkUnique(newProduct)).isFalse();
     }
     
     /**
@@ -101,7 +130,18 @@ class ProductServiceTest {
     */
     @Test
     void 商品情報が存在する場合例外が発生しないこと() {
-
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<Product> product = Optional.of(new Product());
+    	
+    	doReturn(count).when(this.mockProductRepository).countById(id);
+    	doReturn(product).when(this.mockProductRepository).findById(id);
+    	
+    	assertThatCode(() -> {
+    		target.get(id);
+    	})
+    	.doesNotThrowAnyException();
     }
     /**
     * 概要 商品情報の取得<br>
@@ -110,7 +150,13 @@ class ProductServiceTest {
     */
     @Test
     void 商品情報が存在しない場合例外が発生すること() {
-
+    	Long id = 1000L;
+    	
+    	doReturn(null).when(this.mockProductRepository).countById(id);
+    	assertThatThrownBy(() -> {
+    		target.get(id);
+    	})
+    	.isInstanceOf(NotFoundException.class);
     }
     
     /**
@@ -120,6 +166,15 @@ class ProductServiceTest {
     */
     @Test
     void 商品情報の取得処理の検証() throws Exception {
-
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<Product> product = Optional.of(new Product());
+    	
+    	doReturn(count).when(this.mockProductRepository).countById(id);
+    	doReturn(product).when(this.mockProductRepository).findById(id);
+    	
+    	Product actual = this.target.get(id);
+    	assertThat(actual).isEqualTo(product.get());
     }
 }
