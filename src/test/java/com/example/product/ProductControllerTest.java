@@ -60,6 +60,7 @@ class ProductControllerTest {
     	String keyword = null;
     	
     	doReturn(products).when(this.mockProductService).listAll(keyword);
+    	
     	this.mockMvc.perform(get("/products").param("keyword", keyword))
     		.andExpect(status().isOk())
     		.andExpect(view().name("products/products"))
@@ -85,13 +86,12 @@ class ProductControllerTest {
      */
     @Test
     void saveProductTest() throws Exception {
-    	Product product = new Product();
+    	Product product = new Product("testName", "testDescripton");
     	
     	doReturn(true).when(this.mockProductService).isValid(product.getName(), product.getDescription());
     	doReturn(true).when(this.mockProductService).checkUnique(product);
     	doReturn(null).when(this.mockProductService).save(product);
-    	//doReturn().when(this.productSaveHelper).setMainImageName(MultipartFile, product);
-    	// 画像に関しては保留
+
     	this.mockMvc.perform(post("/products/save").flashAttr("product", product))
     		.andExpect(status().isFound())
     		.andExpect(redirectedUrl("/products"))
@@ -123,14 +123,11 @@ class ProductControllerTest {
     	Product product = new Product();
     	
     	doReturn(product).when(this.mockProductService).get(id);
-    	//doReturn(product).when(this.mockBrandService).listAll();
-    	//doReturn(product).when(this.mockCategoryService).listAll();
     	
     	this.mockMvc.perform(get("/products/edit/{id}", id))
     		.andExpect(status().isOk())
     		.andExpect(view().name("products/product_edit"))
     		.andExpect(model().attribute("product",product));
-    		//.andExpect(model().attribute("listBrands", listBrands))
     }
 
     /**
@@ -149,33 +146,3 @@ class ProductControllerTest {
     			
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

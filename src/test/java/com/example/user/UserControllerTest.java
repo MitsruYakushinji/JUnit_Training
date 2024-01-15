@@ -36,7 +36,8 @@ class UserControllerTest {
 
     @BeforeEach
     void setup() {
-
+    	// MockMvcの生成
+    	this.mockMvc = MockMvcBuilders.standaloneSetup(target).alwaysDo(log()).build();
     }
 
     /**
@@ -44,7 +45,16 @@ class UserControllerTest {
      */
     @Test
     void listUsersTest() throws Exception {
-
+    	List<User> users = new ArrayList<>();
+    	String keyword = null;
+    	
+    	doReturn(users).when(this.mockUserService).listAll(keyword);
+    	
+    	this.mockMvc.perform(get("/users").param("keyword", keyword))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("users/users"))
+    		.andExpect(model().attribute("listUsers", users))
+    		.andExpect(model().attribute("keyword", keyword));
     }
 
     /**
@@ -52,7 +62,12 @@ class UserControllerTest {
      */
     @Test
     void newUserTest() throws Exception {
-
+    	MvcResult result = this.mockMvc.perform(get("/users/new"))
+    			.andExpect(status().isOk())
+    			.andExpect(view().name("users/user_form")).andReturn();
+    	
+    	User actual = (User)result.getModelAndView().getModel().get("user");
+    	assertThat(actual).isInstanceOf(User.class);
     }
 
     /**
@@ -60,7 +75,16 @@ class UserControllerTest {
      */
     @Test
     void saveUserTest() throws Exception {
+    	User user = new User("testEmail", "testName");
+    	
+    	doReturn(true).when(this.mockUserService).isValid(user.getEmail(), user.getName());
+    	doReturn(true).when(this.mockUserService).checkUnique(user);
+    	doReturn(null).when(this.mockUserService).save(user);
 
+    	this.mockMvc.perform(post("/users/save").flashAttr("user", user))
+    		.andExpect(status().isFound())
+    		.andExpect(redirectedUrl("/users"))
+    		.andExpect(flash().attribute("success_message", "登録に成功しました"));
     }
 
     /**
@@ -68,7 +92,15 @@ class UserControllerTest {
      */
     @Test
     void detailUserTest() throws Exception {
-
+    	Long id = 1L;
+    	User user = new User();
+    	
+    	doReturn(user).when(this.mockUserService).get(id);
+    	
+    	this.mockMvc.perform(get("/users/detail/{id}", id))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("users/user_detail"))
+    		.andExpect(model().attribute("user", user));
     }
 
     /**
@@ -76,7 +108,15 @@ class UserControllerTest {
      */
     @Test
     void editUserTest() throws Exception {
-
+    	Long id = 1L;
+    	User user = new User();
+    	
+    	doReturn(user).when(this.mockUserService).get(id);
+    	
+    	this.mockMvc.perform(get("/users/edit/{id}", id))
+    		.andExpect(status().isOk())
+    		.andExpect(view().name("users/user_edit"))
+    		.andExpect(model().attribute("user", user));
     }
 
     /**
@@ -85,6 +125,13 @@ class UserControllerTest {
      */
     @Test
     void deleteUserTest() throws Exception {
-
+    	Long id = 1L;
+    	
+    	doNothing().when(this.mockUserService).delete(id);
+    	
+    	this.mockMvc.perform(get("/users/delete/{id}", id))
+    			.andExpect(status().isFound())
+    			.andExpect(redirectedUrl("/users"))
+    			.andExpect(flash().attribute("success_message", "削除に成功しました"));
     }
 }

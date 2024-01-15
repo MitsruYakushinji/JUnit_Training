@@ -42,7 +42,27 @@ class UserServiceTest {
     */
     @BeforeAll
     static void setUp(){
-
+    	IDatabaseConnection connection = null;
+    	try {
+    		Class.forName("oracle.jdbc.driver.OracleDriver");
+    		Connection jdbcConnection = DriverManager.getConnection(
+    				"jdbc:oracle:thin:@localhost:1521:xe", "SLSHOP_UT", "slshop");
+    		connection = new DatabaseConnection(jdbcConnection, "SLSHOP_UT");
+    		IDataSet iDataset = new CsvDataSet(
+    				new File(System.getProperty("user.dir")
+    						+ "\\src\\test\\resources\\testData"));
+    		DatabaseOperation.CLEAN_INSERT.execute(connection, iDataset);
+    	} catch (Exception e) {
+    		System.err.println(e);
+    	} finally {
+    		if(connection != null) {
+    			try {
+    				connection.close();
+    			} catch (Exception e) {
+    				System.err.println(e);
+    			}
+    		}
+    	}
     }
     
     /**
@@ -56,7 +76,7 @@ class UserServiceTest {
     @ParameterizedTest
     @CsvFileSource(resources = "paramtest_true.csv", numLinesToSkip = 1)
     void parameterTestTrue(String email, String name) {
-
+    	assertThat(target.isValid(email, name)).isTrue();
     }
 
     /**
@@ -72,7 +92,7 @@ class UserServiceTest {
     @ParameterizedTest
     @CsvFileSource(resources = "paramtest_false.csv", numLinesToSkip = 1)
     void parameterTestFalse(String email, String name) {
-
+    	assertThat(target.isValid(email, name)).isFalse();
     }   
     
     /**
@@ -82,7 +102,9 @@ class UserServiceTest {
     */
     @Test
     void 管理者メールアドレスが重複していない場合trueを返すこと() {
-
+    	User newUser = new User("admin111@example.com");
+    	doReturn(null).when(this.mockUserRepository).findByEmail(anyString());
+    	assertThat(target.checkUnique(newUser)).isTrue();
     }
     
     /**
@@ -92,7 +114,14 @@ class UserServiceTest {
     */
     @Test
     void 管理者メールアドレスが重複する場合falseを返すこと() {
-
+    	User newUser = new User("admin@example.com");
+    	
+    	User mockUser = new User();
+    	mockUser.setId(1L);
+    	mockUser.setEmail("admin@example.com");
+    	
+    	doReturn(mockUser).when(this.mockUserRepository).findByEmail(newUser.getEmail());
+    	assertThat(target.checkUnique(newUser)).isFalse();
     }
     
     /**
@@ -102,7 +131,18 @@ class UserServiceTest {
     */
     @Test
     void 管理者情報が存在する場合例外が発生しないこと() {
-
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<User> user = Optional.of(new User());
+    	
+    	doReturn(count).when(this.mockUserRepository).countById(id);
+    	doReturn(user).when(this.mockUserRepository).findById(id);
+    	
+    	assertThatCode(() -> {
+    		target.get(id);
+    	})
+    	.doesNotThrowAnyException();
     }
 
     /**
@@ -112,7 +152,13 @@ class UserServiceTest {
     */
     @Test
     void 管理者情報が存在しない場合例外が発生すること() {
-
+    	Long id = 1000L;
+    	
+    	doReturn(null).when(this.mockUserRepository).countById(id);
+    	assertThatThrownBy(() -> {
+    		target.get(id);
+    	})
+    	.isInstanceOf(NotFoundException.class);
     }
     
     /**
@@ -122,6 +168,15 @@ class UserServiceTest {
     */
     @Test
     void 管理者情報の取得処理の検証() throws Exception {
-        
+    	Long id = 1L;
+    	
+    	Long count = 1L;
+    	Optional<User> user = Optional.of(new User());
+    	
+    	doReturn(count).when(this.mockUserRepository).countById(id);
+    	doReturn(user).when(this.mockUserRepository).findById(id);
+    	
+    	User actual = this.target.get(id);
+    	assertThat(actual).isEqualTo(user.get());
     }
 }
